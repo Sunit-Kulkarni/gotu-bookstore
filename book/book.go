@@ -17,12 +17,27 @@ type ListBooksResponse struct {
 }
 
 //encore:api auth method=GET path=/books
-func ListBooks(ctx context.Context) (*ListBooksResponse, error) {
+func ListBooks(ctx context.Context, page Page) (*ListBooksResponse, error) {
+	// page
+	// limit
+	// - these are going to be query parameters on the GET endpoint.
+	// - Should not use request bodies on GET endpoints
+
+	defaultPageLimit := 2
+	if page.PageLimit == 0 {
+		page.PageLimit = defaultPageLimit
+	}
+
+	// page limit and page number from user input needs to translate into SQL offset and limit
+	offset := (page.PageNumber - 1) * page.PageLimit
+
 	var books []Book
 	rows, err := db.Bookstoredb.Query(ctx, `
         SELECT id, title, author, price 
         FROM books
-    `)
+        OFFSET $1
+        LIMIT $2
+    `, offset, page.PageLimit)
 	defer rows.Close()
 	if err != nil {
 		return nil, err
