@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	auth2 "encore.app/auth"
+	"encore.app/db"
 	"fmt"
 	"net/mail"
 
@@ -26,7 +27,7 @@ func CreateAccount(ctx context.Context, params *CreateAccountParams) (*CreateAcc
 	}
 
 	var exists bool
-	err = bookstoredb.QueryRow(ctx, `
+	err = db.Bookstoredb.QueryRow(ctx, `
         SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)
     `, params.Email).Scan(&exists)
 	if err != nil {
@@ -37,7 +38,7 @@ func CreateAccount(ctx context.Context, params *CreateAccountParams) (*CreateAcc
 	}
 
 	var user User
-	err = bookstoredb.QueryRow(ctx, `
+	err = db.Bookstoredb.QueryRow(ctx, `
         INSERT INTO users (email, password)
         VALUES ($1, $2)
         RETURNING id, email
@@ -55,7 +56,7 @@ func CreateAccount(ctx context.Context, params *CreateAccountParams) (*CreateAcc
 //encore:api public method=POST path=/login
 func Login(ctx context.Context, params *LoginParams) (*LoginResponse, error) {
 	var user User
-	err := bookstoredb.QueryRow(ctx, `
+	err := db.Bookstoredb.QueryRow(ctx, `
         SELECT id, email, password FROM users WHERE email = $1
     `, params.Email).Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
